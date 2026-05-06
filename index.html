@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:          #f4f5f7;
+  --white:       #ffffff;
+  --border:      #e2e4e9;
+  --border2:     #d0d3db;
+  --text:        #111318;
+  --muted:       #6b7280;
+  --dim:         #9ca3af;
+  --navy:        #1e3a5f;
+  --navy-light:  #e8eef5;
+  --navy-mid:    #c7d6e8;
+  --green:       #16a34a;
+  --green-light: #f0fdf4;
+  --green-bd:    #bbf7d0;
+  --amber:       #d97706;
+  --amber-light: #fffbeb;
+  --amber-bd:    #fde68a;
+  --red:         #dc2626;
+  --red-light:   #fef2f2;
+  --red-bd:      #fecaca;
+  --violet:      #7c3aed;
+  --violet-light:#f5f3ff;
+  --violet-bd:   #ddd6fe;
+  --blue:        #2563eb;
+  --blue-light:  #eff6ff;
+  --blue-bd:     #bfdbfe;
+  --sans:        'Geist', sans-serif;
+  --mono:        'Geist Mono', monospace;
+  --r:           6px;
+  --rl:          8px;
+  --shadow:      0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:   0 4px 16px rgba(0,0,0,.09), 0 2px 4px rgba(0,0,0,.04);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;min-height:100vh;}
+
+/* ── Header ── */
+header{background:var(--white);border-bottom:1px solid var(--border);padding:0 1.75rem;display:flex;align-items:center;justify-content:space-between;height:52px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.logo{display:flex;align-items:center;gap:9px;}
+.logo-mark{width:27px;height:27px;background:var(--navy);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:500;color:#fff;flex-shrink:0;}
+.logo-text{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.01em;}
+.header-right{display:flex;align-items:center;gap:8px;}
+
+/* connected pill */
+.conn-pill{display:none;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--green);background:var(--green-light);border:1px solid var(--green-bd);border-radius:var(--r);padding:4px 10px;}
+.conn-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.conn-pill.visible{display:flex;}
+
+/* ── Buttons ── */
+button{font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);padding:6px 13px;display:inline-flex;align-items:center;gap:5px;transition:all .12s;line-height:1.4;box-shadow:var(--shadow);}
+button:hover{background:var(--bg);}
+button:active{transform:scale(.98);box-shadow:none;}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-primary{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 1px 3px rgba(30,58,95,.2);}
+.btn-primary:hover{background:#163050;border-color:#163050;}
+.btn-sm{padding:4px 10px;font-size:12px;}
+
+/* ── Layout ── */
+.container{max-width:1100px;margin:0 auto;padding:1.5rem 1.75rem;}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:1.1rem;flex-wrap:wrap;}
+.search-wrap{flex:1;min-width:180px;position:relative;}
+.search-wrap input{width:100%;background:var(--white);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;padding:6px 11px 6px 32px;outline:none;transition:border-color .15s,box-shadow .15s;box-shadow:var(--shadow);}
+.search-wrap input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.search-wrap input::placeholder{color:var(--dim);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;}
+select{background:var(--white);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;padding:6px 11px;outline:none;cursor:pointer;box-shadow:var(--shadow);}
+select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+
+/* ── Card grid ── */
+.board{display:flex;flex-direction:column;gap:8px;}
+
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);box-shadow:var(--shadow);overflow:hidden;transition:box-shadow .12s;}
+.card:hover{box-shadow:0 2px 8px rgba(0,0,0,.09);}
+
+.card-main{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:0;cursor:pointer;}
+
+.card-status{width:4px;align-self:stretch;flex-shrink:0;}
+.card-status.open    {background:var(--red);}
+.card-status.wip     {background:var(--amber);}
+.card-status.resolved{background:var(--green);}
+.card-status.blocked {background:var(--violet);}
+
+.card-body{padding:.85rem 1rem;min-width:0;}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+.card-id{font-family:var(--mono);font-size:11px;color:var(--dim);}
+.card-event{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.card-meta-item{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);}
+.card-meta-item span{font-weight:500;color:var(--text);}
+
+.card-right{padding:.85rem 1rem;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.card-actions{padding:.85rem .75rem .85rem 0;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+
+/* ── Status badges ── */
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;white-space:nowrap;border:1px solid transparent;line-height:1.5;}
+.b-open    {background:var(--red-light);   color:var(--red);   border-color:var(--red-bd);}
+.b-wip     {background:var(--amber-light); color:var(--amber); border-color:var(--amber-bd);}
+.b-resolved{background:var(--green-light); color:var(--green); border-color:var(--green-bd);}
+.b-blocked {background:var(--violet-light);color:var(--violet);border-color:var(--violet-bd);}
+.b-platform{background:var(--navy-light);  color:var(--navy);  border-color:var(--navy-mid);font-size:11px;}
+.b-method  {background:var(--blue-light);  color:var(--blue);  border-color:var(--blue-bd); font-size:11px;}
+
+/* ── Expanded card detail ── */
+.card-detail{border-top:1px solid var(--border);padding:1rem 1.25rem 1rem calc(4px + 1rem);display:none;gap:1.25rem;flex-wrap:wrap;}
+.card-detail.open{display:flex;}
+
+.detail-col{display:flex;flex-direction:column;gap:.5rem;min-width:160px;flex:1;}
+.detail-col-wide{flex:2;min-width:240px;}
+.detail-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);margin-bottom:1px;}
+.detail-value{font-size:13px;color:var(--text);line-height:1.55;}
+.detail-value.mono{font-family:var(--mono);font-size:12px;}
+.detail-value.muted{color:var(--muted);}
+
+.progress-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.65rem .85rem;font-size:13px;color:var(--text);line-height:1.6;white-space:pre-wrap;min-height:48px;}
+.fix-block{background:var(--green-light);border:1px solid var(--green-bd);border-radius:var(--r);padding:.65rem .85rem;font-size:13px;color:var(--green);line-height:1.6;white-space:pre-wrap;}
+.fix-block.empty{background:var(--bg);border-color:var(--border);color:var(--dim);}
+
+/* ── Inline status buttons ── */
+.status-group{display:flex;gap:4px;}
+.status-btn{font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--muted);transition:all .12s;box-shadow:none;white-space:nowrap;}
+.status-btn:hover{background:var(--bg);color:var(--text);box-shadow:none;}
+.status-btn.active-open    {background:var(--red-light);   color:var(--red);   border-color:var(--red-bd);}
+.status-btn.active-wip     {background:var(--amber-light); color:var(--amber); border-color:var(--amber-bd);}
+.status-btn.active-resolved{background:var(--green-light); color:var(--green); border-color:var(--green-bd);}
+.status-btn.active-blocked {background:var(--violet-light);color:var(--violet);border-color:var(--violet-bd);}
+
+/* ── Empty / loading ── */
+.state-msg{text-align:center;padding:4rem 2rem;color:var(--dim);font-size:13px;}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(17,19,24,.4);z-index:300;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);animation:fadeUp .18s ease;overflow:hidden;width:540px;max-height:92vh;overflow-y:auto;}
+@keyframes fadeUp{from{transform:translateY(8px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--white);z-index:1;}
+.modal-header h3{font-size:15px;font-weight:600;letter-spacing:-.01em;}
+.modal-body{padding:1.25rem;display:flex;flex-direction:column;gap:.85rem;}
+.modal-footer{padding:.9rem 1.25rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg);}
+.modal-footer .spacer{flex:1;}
+.close-btn{background:none;border:none;color:var(--muted);font-size:16px;padding:4px;cursor:pointer;line-height:1;border-radius:4px;box-shadow:none;}
+.close-btn:hover{background:var(--bg);color:var(--text);}
+
+/* ── Form fields ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:12px;font-weight:500;color:var(--muted);}
+.field input,.field select,.field textarea{background:var(--white);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.field textarea{resize:vertical;min-height:72px;line-height:1.55;}
+
+/* platform checkboxes */
+.cb-group{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+.cb-label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;background:var(--white);border:1px solid var(--border2);border-radius:var(--r);padding:4px 10px;transition:all .12s;user-select:none;}
+.cb-label:hover{border-color:var(--navy-mid);color:var(--navy);background:var(--navy-light);}
+.cb-label input{display:none;}
+.cb-label.checked{background:var(--navy-light);color:var(--navy);border-color:var(--navy-mid);}
+
+/* method pills */
+.method-group{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+.method-pill{font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;background:var(--white);border:1px solid var(--border2);border-radius:var(--r);padding:4px 10px;transition:all .12s;user-select:none;}
+.method-pill:hover{border-color:var(--blue-bd);color:var(--blue);background:var(--blue-light);}
+.method-pill.selected{background:var(--blue-light);color:var(--blue);border-color:var(--blue-bd);}
+
+.hidden{display:none!important;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">BB</div>
+    <span class="logo-text">Bug Board</span>
+  </div>
+  <div class="header-right">
+    <div class="conn-pill" id="connPill"><span class="dot"></span>Connected</div>
+    <button id="connectBtn" class="btn-primary">⇄ Connect Sheet</button>
+    <button id="newBugBtn" class="btn-primary hidden">+ New bug</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Search event, owner, issuer…">
+    </div>
+    <select id="fStatus">
+      <option value="">All statuses</option>
+      <option>Open</option>
+      <option>In Progress</option>
+      <option>Resolved</option>
+      <option>Blocked</option>
+    </select>
+    <select id="fPlatform">
+      <option value="">All platforms</option>
+      <option>iOS WebView</option>
+      <option>Android WebView</option>
+      <option>Web</option>
+    </select>
+  </div>
+
+  <div class="board" id="board">
+    <div class="state-msg">Connect your sheet to load bugs.</div>
+  </div>
+
+</div>
+
+<!-- New bug modal -->
+<div class="modal-overlay" id="formOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New bug</h3>
+      <button class="close-btn" id="closeForm">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-row">
+        <div class="field">
+          <label>Event / feature</label>
+          <input type="text" id="f-event" placeholder="view_item_list">
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="f-date">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Platform(s)</label>
+        <div class="cb-group">
+          <label class="cb-label"><input type="checkbox" value="iOS WebView">iOS WebView</label>
+          <label class="cb-label"><input type="checkbox" value="Android WebView">Android WebView</label>
+          <label class="cb-label"><input type="checkbox" value="Web">Web</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Issuer</label>
+          <input type="text" id="f-issuer" placeholder="Who raised it">
+        </div>
+        <div class="field">
+          <label>Owner</label>
+          <input type="text" id="f-owner" placeholder="Who fixes it">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>GTM version</label>
+          <input type="text" id="f-gtm" placeholder="108">
+        </div>
+        <div class="field">
+          <label>App version</label>
+          <input type="text" id="f-app" placeholder="v1.0.0">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Debug method(s)</label>
+        <div class="method-group">
+          <span class="method-pill" data-val="GA DebugView">GA DebugView</span>
+          <span class="method-pill" data-val="chrome://inspect">chrome://inspect</span>
+          <span class="method-pill" data-val="BQ Query">BQ Query</span>
+          <span class="method-pill" data-val="Console">Console</span>
+          <span class="method-pill" data-val="Network tab">Network tab</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Progress notes</label>
+        <textarea id="f-notes" placeholder="What's been tried, what was found, changes made…"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <div class="spacer"></div>
+      <button id="cancelForm">Cancel</button>
+      <button class="btn-primary" id="submitForm">Add bug</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── HARDCODED — not shown in UI ───────────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwB2xriADIGI_7P_QLfecoVTdZdaYYgkQZlrSaamEAIQNp_-hb3oEmx4TkI8zeuRHfeCQ/exec';
+// ───────────────────────────────────────────────────────────
+
+let allLogs   = [];
+let expandedId = null;
+
+const statusKey = s => ({Open:'open','In Progress':'wip',Resolved:'resolved',Blocked:'blocked'}[s]||'open');
+const statusBadge = s => `<span class="badge b-${statusKey(s)}">${s||'Open'}</span>`;
+
+// ── Connect & fetch ────────────────────────────────────────
+async function connect() {
+  const btn = document.getElementById('connectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+  await fetchLogs();
+}
+
+async function fetchLogs() {
+  const btn = document.getElementById('connectBtn');
+  document.getElementById('board').innerHTML = `<div class="state-msg"><span class="spinner"></span>Loading…</div>`;
+  try {
+    const res  = await fetch(`${SCRIPT_URL}?action=getLogs`);
+    const data = await res.json();
+    allLogs = data.logs || [];
+    onConnected();
+    render();
+  } catch(e) {
+    document.getElementById('board').innerHTML = `<div class="state-msg" style="color:var(--red)">Could not reach sheet — check the Apps Script URL.</div>`;
+    btn.disabled = false;
+    btn.textContent = '⇄ Connect Sheet';
+  }
+}
+
+function onConnected() {
+  document.getElementById('connPill').classList.add('visible');
+  document.getElementById('newBugBtn').classList.remove('hidden');
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = '↻ Refresh';
+  btn.disabled = false;
+  btn.onclick = fetchLogs;
+}
+
+async function patchField(id, field, value) {
+  await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'updateField', id, field, value }) });
+  const l = allLogs.find(x => x['ID'] === id);
+  if (l) l[field] = value;
+}
+
+// ── Render ─────────────────────────────────────────────────
+function filtered() {
+  const q  = document.getElementById('searchInput').value.toLowerCase();
+  const st = document.getElementById('fStatus').value;
+  const pl = document.getElementById('fPlatform').value;
+  return allLogs.filter(l => {
+    const txt = [l['ID'],l['Event / Feature'],l['Owner'],l['Issuer']].join(' ').toLowerCase();
+    return (!q||txt.includes(q))
+      && (!st||l['Status']===st)
+      && (!pl||(l['Platform']||'').includes(pl));
+  });
+}
+
+function render() {
+  const board = document.getElementById('board');
+  const logs  = filtered();
+  if (!logs.length) { board.innerHTML = `<div class="state-msg">No bugs found.</div>`; return; }
+
+  board.innerHTML = logs.map(l => {
+    const sk  = statusKey(l['Status']);
+    const isOpen = expandedId === l['ID'];
+    const platforms = (l['Platform']||'').split(',').map(p=>p.trim()).filter(Boolean)
+      .map(p=>`<span class="badge b-platform">${p}</span>`).join('');
+    const methods = (l['Debug Method']||'').split(',').map(m=>m.trim()).filter(Boolean)
+      .map(m=>`<span class="badge b-method">${m}</span>`).join(' ');
+    const fix = l['Fix'] || '';
+
+    return `
+    <div class="card" data-id="${l['ID']}">
+      <div class="card-main" data-toggle="${l['ID']}">
+        <div class="card-status ${sk}"></div>
+        <div class="card-body">
+          <div class="card-top">
+            <span class="card-id">${l['ID']}</span>
+            <span class="card-event">${l['Event / Feature']||'—'}</span>
+            ${platforms}
+          </div>
+          <div class="card-meta">
+            <span class="card-meta-item">Issuer <span>${l['Issuer']||'—'}</span></span>
+            <span class="card-meta-item">Owner <span>${l['Owner']||'—'}</span></span>
+            <span class="card-meta-item">GTM <span>${l['GTM Version']||'—'}</span></span>
+            <span class="card-meta-item">App <span>${l['App Version']||'—'}</span></span>
+            ${l['Date'] ? `<span class="card-meta-item">${l['Date']}</span>` : ''}
+          </div>
+        </div>
+        <div class="card-right">
+          ${statusBadge(l['Status'])}
+        </div>
+        <div class="card-actions">
+          <span style="font-size:12px;color:var(--dim);user-select:none">${isOpen ? '▲' : '▼'}</span>
+        </div>
+      </div>
+
+      <div class="card-detail ${isOpen ? 'open' : ''}">
+
+        <div style="width:100%;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <div class="detail-label">Status</div>
+            <div class="status-group">
+              ${['Open','In Progress','Resolved','Blocked'].map(s=>`
+                <button class="status-btn${l['Status']===s?' active-'+statusKey(s):''}" data-id="${l['ID']}" data-status="${s}">${s}</button>
+              `).join('')}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <div class="detail-label">Debug method</div>
+            <div class="detail-value">${methods||'<span style="color:var(--dim)">—</span>'}</div>
+          </div>
+        </div>
+
+        <div class="detail-col-wide detail-col">
+          <div class="detail-label">Progress notes</div>
+          <div class="progress-block">${l['Progress Notes']||'<span style="color:var(--dim)">No notes yet.</span>'}</div>
+        </div>
+
+        <div class="detail-col-wide detail-col">
+          <div class="detail-label" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            Fix
+            <button class="btn-sm" data-fix-open="${l['ID']}" style="font-size:11px;padding:2px 8px">Edit</button>
+          </div>
+          <div class="fix-block ${fix?'':'empty'}" id="fix-display-${l['ID']}">${fix||'Not resolved yet.'}</div>
+          <div id="fix-edit-${l['ID']}" style="display:none;flex-direction:column;gap:6px;margin-top:4px">
+            <textarea style="width:100%;background:var(--white);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;resize:vertical;min-height:72px;line-height:1.55" id="fix-input-${l['ID']}">${fix}</textarea>
+            <div style="display:flex;gap:6px">
+              <button class="btn-primary btn-sm" data-fix-save="${l['ID']}">Save</button>
+              <button class="btn-sm" data-fix-cancel="${l['ID']}">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+  }).join('');
+
+  // toggle expand
+  board.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('status-btn')) return;
+      if (e.target.closest('[data-fix-open],[data-fix-save],[data-fix-cancel]')) return;
+      const id = el.dataset.toggle;
+      expandedId = expandedId === id ? null : id;
+      render();
+    });
+  });
+
+  // status buttons
+  board.querySelectorAll('.status-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const { id, status } = btn.dataset;
+      await patchField(id, 'Status', status);
+      render();
+    });
+  });
+
+  // fix — open edit
+  board.querySelectorAll('[data-fix-open]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.fixOpen;
+      document.getElementById(`fix-display-${id}`).style.display = 'none';
+      document.getElementById(`fix-edit-${id}`).style.display = 'flex';
+    });
+  });
+
+  // fix — save
+  board.querySelectorAll('[data-fix-save]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id  = btn.dataset.fixSave;
+      const val = document.getElementById(`fix-input-${id}`).value;
+      btn.textContent = 'Saving…'; btn.disabled = true;
+      await patchField(id, 'Fix', val);
+      render();
+    });
+  });
+
+  // fix — cancel
+  board.querySelectorAll('[data-fix-cancel]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = btn.dataset.fixCancel;
+      document.getElementById(`fix-display-${id}`).style.display = '';
+      document.getElementById(`fix-edit-${id}`).style.display = 'none';
+    });
+  });
+}
+
+// ── Form ───────────────────────────────────────────────────
+document.querySelectorAll('.cb-label').forEach(label => {
+  label.addEventListener('click', () => {
+    const cb = label.querySelector('input');
+    cb.checked = !cb.checked;
+    label.classList.toggle('checked', cb.checked);
+  });
+});
+document.querySelectorAll('.method-pill').forEach(pill => {
+  pill.addEventListener('click', () => pill.classList.toggle('selected'));
+});
+
+document.getElementById('f-date').value = today();
+
+async function handleSubmit() {
+  const platforms = [...document.querySelectorAll('.cb-label.checked')].map(l=>l.querySelector('input').value).join(', ');
+  const methods   = [...document.querySelectorAll('.method-pill.selected')].map(p=>p.dataset.val).join(', ');
+  const log = {
+    date:          document.getElementById('f-date').value,
+    eventFeature:  document.getElementById('f-event').value,
+    platform:      platforms,
+    issuer:        document.getElementById('f-issuer').value,
+    owner:         document.getElementById('f-owner').value,
+    gtmVersion:    document.getElementById('f-gtm').value,
+    appVersion:    document.getElementById('f-app').value,
+    debugMethod:   methods,
+    progressNotes: document.getElementById('f-notes').value,
+  };
+  const btn = document.getElementById('submitForm');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ action:'addLog', log }) });
+  await fetchLogs();
+  btn.textContent = 'Add bug'; btn.disabled = false;
+  closeForm();
+}
+
+function openForm() {
+  document.getElementById('f-date').value = today();
+  document.querySelectorAll('.cb-label').forEach(l => { l.querySelector('input').checked = false; l.classList.remove('checked'); });
+  document.querySelectorAll('.method-pill').forEach(p => p.classList.remove('selected'));
+  ['f-event','f-issuer','f-owner','f-gtm','f-app','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('formOverlay').classList.add('open');
+}
+function closeForm() { document.getElementById('formOverlay').classList.remove('open'); }
+
+// ── Utils ──────────────────────────────────────────────────
+function today() { return new Date().toISOString().slice(0,10); }
+
+// ── Events ─────────────────────────────────────────────────
+document.getElementById('connectBtn').addEventListener('click', connect);
+document.getElementById('newBugBtn').addEventListener('click', openForm);
+document.getElementById('closeForm').addEventListener('click', closeForm);
+document.getElementById('cancelForm').addEventListener('click', closeForm);
+document.getElementById('submitForm').addEventListener('click', handleSubmit);
+
+['searchInput','fStatus','fPlatform'].forEach(id =>
+  document.getElementById(id).addEventListener('input', render)
+);
+</script>
+</body>
+</html>
