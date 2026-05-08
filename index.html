@@ -224,8 +224,9 @@ select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(108,71,255,.12
     <select id="fEnv">
       <option value="">All environments</option>
       <option>Prod</option>
-      <option>PreProd</option>
-      <option>development</option>
+      <option>PreProd2</option>
+      <option>PreProd3</option>
+      <option>fCORE</option>
     </select>
   </div>
 
@@ -258,8 +259,9 @@ select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(108,71,255,.12
         <select id="f-env">
           <option value="">Select…</option>
           <option>Prod</option>
-          <option>PreProd</option>
-          <option>development</option>
+          <option>PreProd2</option>
+          <option>PreProd3</option>
+          <option>fCORE</option>
         </select>
       </div>
       <div class="field">
@@ -403,7 +405,7 @@ function render() {
         <div>
           <div class="detail-label">Environment</div>
           <div class="status-row">
-            ${['Prod','PreProd','development'].map(env=>`
+            ${['Prod','PreProd2','PreProd3','fCORE'].map(env=>`
               <button class="env-opt${l['Environment']===env?' sel-env':''}" data-id="${l['ID']}" data-env="${env}">${env}</button>
             `).join('')}
           </div>
