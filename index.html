@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐞q%3C/text%3E%3C/svg%3E">
+
 <style>
 :root {
   --bg:       #faf8ff;
@@ -168,7 +169,23 @@ select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(108,71,255,.12
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(108,71,255,.12);background:var(--white);}
 .field textarea{resize:vertical;min-height:72px;line-height:1.55;}
 
-/* ── States ── */
+.env-opt{font-size:12px;font-weight:500;padding:4px 12px;border-radius:99px;cursor:pointer;border:1.5px solid var(--border);background:var(--white);color:var(--muted);transition:all .12s;}
+.env-opt:hover{border-color:var(--blue-m);color:var(--blue);background:var(--blue-l);}
+.env-opt.sel-env{background:var(--blue-l);color:var(--blue);border-color:var(--blue-m);font-weight:600;}
+
+/* ── Flag ── */
+.flag-btn{background:none;border:none;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:8px;box-shadow:none;line-height:1;opacity:.3;transition:opacity .15s,transform .15s;}
+.flag-btn:hover{opacity:.7;transform:scale(1.15);background:none;}
+.flag-btn.flagged{opacity:1;}
+
+/* ── Sort bar ── */
+.sort-bar{display:flex;align-items:center;gap:6px;margin-bottom:.75rem;}
+.sort-bar span{font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.05em;text-transform:uppercase;}
+.sort-btn{font-size:12px;padding:3px 11px;border-radius:99px;border:1.5px solid var(--border);background:var(--white);color:var(--muted);cursor:pointer;transition:all .12s;box-shadow:none;}
+.sort-btn:hover{border-color:var(--purple-m);color:var(--purple);background:var(--purple-l);}
+.sort-btn.active{background:var(--purple-l);color:var(--purple);border-color:var(--purple-m);font-weight:600;}
+
+/* ── Empty / loading ── */
 .state-msg{text-align:center;padding:4rem 2rem;color:var(--dim);font-size:13px;}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -207,11 +224,16 @@ select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(108,71,255,.12
     <select id="fEnv">
       <option value="">All environments</option>
       <option>Prod</option>
-      <option>PreProd2</option>
-      <option>PreProd3</option>
-      <option>fCore</option>
-      <option>other</option>
+      <option>PreProd</option>
+      <option>development</option>
     </select>
+  </div>
+
+  <div class="sort-bar">
+    <span>Sort</span>
+    <button class="sort-btn active" data-sort="date-desc">Newest first</button>
+    <button class="sort-btn" data-sort="date-asc">Oldest first</button>
+    <button class="sort-btn" data-sort="flagged">🚩 Flagged first</button>
   </div>
 
   <div class="board" id="board">
@@ -236,10 +258,8 @@ select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(108,71,255,.12
         <select id="f-env">
           <option value="">Select…</option>
           <option>Prod</option>
-          <option>PreProd2</option>
-          <option>PreProd3</option>
-          <option>fCore</option>
-          <option>other</option>
+          <option>PreProd</option>
+          <option>development</option>
         </select>
       </div>
       <div class="field">
@@ -262,6 +282,7 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwB2xriADIGI_7P_QLfe
 
 let allLogs    = [];
 let expandedId = null;
+let sortMode   = 'date-desc';
 
 const SK = s => ({Open:'open','In Progress':'wip',Resolved:'resolved',Blocked:'blocked'}[s]||'open');
 
@@ -319,12 +340,18 @@ function filtered() {
   const q  = document.getElementById('searchInput').value.toLowerCase();
   const st = document.getElementById('fStatus').value;
   const en = document.getElementById('fEnv').value;
-  return allLogs.filter(l => {
+  let logs = allLogs.filter(l => {
     const txt = [l['ID'], l['Bug']].join(' ').toLowerCase();
     return (!q || txt.includes(q))
       && (!st || l['Status'] === st)
       && (!en || l['Environment'] === en);
   });
+  if (sortMode === 'date-desc') logs.sort((a,b) => (b['Date']||'').localeCompare(a['Date']||''));
+  if (sortMode === 'date-asc')  logs.sort((a,b) => (a['Date']||'').localeCompare(b['Date']||''));
+  if (sortMode === 'name-asc')  logs.sort((a,b) => (a['Bug']||'').localeCompare(b['Bug']||''));
+  if (sortMode === 'name-desc') logs.sort((a,b) => (b['Bug']||'').localeCompare(a['Bug']||''));
+  if (sortMode === 'flagged')   logs.sort((a,b) => (b['Flagged']==='true'?1:0) - (a['Flagged']==='true'?1:0));
+  return logs;
 }
 
 function render() {
@@ -355,7 +382,8 @@ function render() {
             <span class="card-meta-item" style="font-size:11px;color:var(--dim)">${notes.length} note${notes.length!==1?'s':''}</span>
           </div>
         </div>
-        <div class="card-right">
+        <div class="card-right" style="gap:6px">
+          <button class="flag-btn${l['Flagged']==='true'?' flagged':''}" data-flag="${l['ID']}" title="Flag this bug">🚩</button>
           <span class="pill p-${sk}">${l['Status']||'Open'}</span>
         </div>
         <div class="card-toggle">${isOpen?'▲':'▼'}</div>
@@ -368,6 +396,15 @@ function render() {
           <div class="status-row">
             ${['Open','In Progress','Resolved','Blocked'].map(s=>`
               <button class="status-opt${l['Status']===s?' sel-'+SK(s):''}" data-id="${l['ID']}" data-status="${s}">${s}</button>
+            `).join('')}
+          </div>
+        </div>
+
+        <div>
+          <div class="detail-label">Environment</div>
+          <div class="status-row">
+            ${['Prod','PreProd','development'].map(env=>`
+              <button class="env-opt${l['Environment']===env?' sel-env':''}" data-id="${l['ID']}" data-env="${env}">${env}</button>
             `).join('')}
           </div>
         </div>
@@ -398,6 +435,20 @@ function render() {
     </div>`;
   }).join('');
 
+  // flag
+  board.querySelectorAll('[data-flag]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id  = btn.dataset.flag;
+      const log = allLogs.find(x=>x['ID']===id);
+      if (!log) return;
+      const next = log['Flagged'] === 'true' ? 'false' : 'true';
+      btn.classList.toggle('flagged', next==='true');
+      await patchField(id, 'Flagged', next);
+      if (sortMode==='flagged') render();
+    });
+  });
+
   // toggle
   board.querySelectorAll('[data-toggle]').forEach(el => {
     el.addEventListener('click', e => {
@@ -413,6 +464,15 @@ function render() {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
       await patchField(btn.dataset.id, 'Status', btn.dataset.status);
+      render();
+    });
+  });
+
+  // environment
+  board.querySelectorAll('.env-opt').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      await patchField(btn.dataset.id, 'Environment', btn.dataset.env);
       render();
     });
   });
@@ -518,6 +578,14 @@ document.getElementById('submitForm').addEventListener('click', handleSubmit);
 ['searchInput','fStatus','fEnv'].forEach(id =>
   document.getElementById(id).addEventListener('input', render)
 );
+
+document.querySelectorAll('[data-sort]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    sortMode = btn.dataset.sort;
+    document.querySelectorAll('[data-sort]').forEach(b => b.classList.toggle('active', b===btn));
+    render();
+  });
+});
 </script>
 </body>
 </html>
