@@ -344,8 +344,8 @@ select:focus{border-color:var(--lavender);}
     <select id="fEnv">
       <option value="">All environments</option>
       <option>Prod</option>
-      <option>PreProd</option>
-      <option>development</option>
+      <option>PreProd2</option>
+      <option>PreProd3</option>
     </select>
   </div>
 
@@ -523,7 +523,7 @@ function render() {
         <div>
           <div class="detail-label">Environment</div>
           <div class="status-row">
-            ${['Prod','PreProd','development'].map(env=>`
+            ${['Prod','PreProd2','PreProd3'].map(env=>`
               <button class="env-opt${l['Environment']===env?' sel-env':''}" data-id="${l['ID']}" data-env="${env}">${env}</button>
             `).join('')}
           </div>
